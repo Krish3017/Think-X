@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes.prediction_routes import router as prediction_router
 from src.api.routes.resume_routes import router as resume_router
+from src.api.routes.skill_routes import router as skill_router
 from src.config.settings import get_settings
 from src.utils.model_loader import load_artifacts
 from joblib import load
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
 
     app.include_router(prediction_router)
     app.include_router(resume_router)
+    app.include_router(skill_router)
 
     # Try to load model artifacts at startup (non-fatal; app will still start)
     try:
