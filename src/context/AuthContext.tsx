@@ -35,14 +35,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const initializeAuth = () => {
+  const initializeAuth = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const storedUser = localStorage.getItem('user');
-      
+
       if (token && storedUser) {
         const userData = JSON.parse(storedUser);
         setUser(userData);
+        await checkAuth(); // validate token with backend; clears if invalid
       } else {
         setUser(null);
       }
@@ -58,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAuth = async () => {
     const token = localStorage.getItem('accessToken');
     const storedUser = localStorage.getItem('user');
-    
+
     if (!token || !storedUser) {
       setUser(null);
       return;
@@ -68,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Trust stored user data - don't depend on API
       const userData = JSON.parse(storedUser);
       setUser(userData);
-      
+
       // Background refresh: try to update user data without blocking auth
       apiService.getMe()
         .then(response => {
@@ -79,11 +80,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         })
         .catch((error) => {
-          // Log error but don't logout user
+          // If token is invalid, clear auth so guards don't keep redirecting
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+          setUser(null);
           if (import.meta.env.DEV) {
             console.warn('Background user refresh failed:', error.message);
           }
-          // Keep user logged in with stored data
         });
     } catch (error) {
       // Only clear if stored data is corrupted (JSON parse error)
@@ -113,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
     setUser(null);
     // Call logout API but don't wait for it
-    apiService.logout().catch(() => {});
+    apiService.logout().catch(() => { });
   };
 
   const value = {

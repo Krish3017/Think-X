@@ -2,45 +2,35 @@ import { motion } from 'framer-motion';
 import { Home, FileText, Target, TrendingUp, Bell, Search, Sparkles, ArrowUp, Flame, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentDashboard() {
-  const generateHeatmapData = () => {
-    const data = [];
-    for (let i = 0; i < 84; i++) {
-      data.push({ date: `day-${i}`, count: Math.floor(Math.random() * 10) });
-    }
-    return data;
-  };
+  const { user } = useAuth();
 
-  const studentData = {
-    name: "Alex Johnson",
-    placementReadiness: 72,
-    skillCoverage: 58,
-    weeklyProgress: 8,
-    weeklyImprovement: 12,
-    leetcodeStreak: 12,
-    githubStreak: 8,
-    streakImprovement: 4,
-    currentSkills: ["Python", "JavaScript", "SQL", "Git", "HTML/CSS"],
-    skillsToLearn: ["React", "AWS", "Docker", "TypeScript", "ML"],
-    skillProgress: [
-      { name: "React", progress: 0 },
-      { name: "AWS", progress: 15 },
-      { name: "ML", progress: 25 },
-    ],
-    leetcodeData: {
-      currentStreak: 12,
-      longestStreak: 28,
-      totalProblems: 156,
-      heatmap: generateHeatmapData(),
-    },
-    githubData: {
-      currentStreak: 8,
-      longestStreak: 45,
-      totalContributions: 342,
-      heatmap: generateHeatmapData(),
-    },
-  };
+  const { data: studentData, isLoading, isError } = useQuery({
+    queryKey: ['studentDashboard'],
+    queryFn: () => apiService.getStudentDashboard(),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
+        <div className="text-gray-400">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  if (isError || !studentData) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
+        <div className="text-red-400">Failed to load dashboard data.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex">
@@ -54,7 +44,7 @@ export default function StudentDashboard() {
             <span className="text-lg font-semibold">Think-X</span>
           </div>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-1">
           <Link to="/student/dashboard">
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 cursor-pointer">
@@ -96,7 +86,7 @@ export default function StudentDashboard() {
               <Bell className="w-5 h-5 text-gray-400" />
             </button>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-              <span className="text-sm font-semibold">AJ</span>
+              <span className="text-sm font-semibold">{studentData.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</span>
             </div>
           </div>
         </div>
@@ -124,10 +114,10 @@ export default function StudentDashboard() {
                     <svg className="w-full h-full transform -rotate-90">
                       <defs>
                         <filter id="glow">
-                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                           <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
                           </feMerge>
                         </filter>
                       </defs>
@@ -273,7 +263,7 @@ export default function StudentDashboard() {
               >
                 <h3 className="text-xs font-medium text-gray-400 mb-3">Skills to Learn</h3>
                 <div className="flex flex-wrap gap-1.5">
-                  {studentData.skillsToLearn.map((skill, idx) => (
+                  {studentData.skillsToLearn.map((skill: string, idx: number) => (
                     <span
                       key={idx}
                       className="px-2 py-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md"
@@ -294,7 +284,7 @@ export default function StudentDashboard() {
               >
                 <h3 className="text-xs font-medium text-gray-400 mb-3">Skill Progress Tracker</h3>
                 <div className="space-y-2">
-                  {studentData.skillProgress.map((skill, idx) => (
+                  {studentData.skillProgress.map((skill: { name: string; progress: number }, idx: number) => (
                     <div key={idx}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-gray-300">{skill.name}</span>

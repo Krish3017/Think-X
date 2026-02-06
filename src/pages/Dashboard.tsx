@@ -1,9 +1,20 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role === 'student') {
+        navigate('/student/dashboard', { replace: true });
+      } else if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      }
+    }
+  }, [user, loading, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -22,7 +33,7 @@ export default function Dashboard() {
             Logout
           </button>
         </div>
-        
+
         <div className="bg-[#0c0c0c] border border-white/10 rounded-xl p-6">
           <h2 className="text-xl font-semibold mb-4">Welcome, {user?.name}!</h2>
           <div className="space-y-2 text-gray-400">

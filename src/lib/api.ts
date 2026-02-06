@@ -55,7 +55,7 @@ interface AuthResponse {
 export const apiService = {
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await api.post('/auth/register', data);
+      const response = await api.post('/auth/signup', data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Registration failed');
@@ -64,7 +64,7 @@ export const apiService = {
 
   async login(data: LoginData): Promise<AuthResponse> {
     try {
-      const response = await api.post('/auth/login', data);
+      const response = await api.post('/auth/signin', data);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -85,6 +85,54 @@ export const apiService = {
       await api.post('/auth/logout');
     } catch (error) {
       // Ignore logout errors
+    }
+  },
+
+  async saveStudentProfile(data: {
+    rollNo: string;
+    name: string;
+    branch: string;
+    joinedYear: number;
+    semester: number;
+    cgpa?: number;
+  }): Promise<{ message: string }> {
+    try {
+      const response = await api.post('/student/profile', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to save profile');
+    }
+  },
+
+  async saveStudentSkills(data: {
+    currentSkills: { name: string; progress?: number; level?: string }[];
+    learningSkills: { name: string; progress?: number; level?: string }[];
+    extractedSkills?: string[];
+    missingSkills?: string[];
+  }): Promise<{ message: string }> {
+    try {
+      const response = await api.post('/student/skills', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to save skills');
+    }
+  },
+
+  async getResumeInsights(): Promise<{ extractedSkills: string[]; missingSkills: string[] }> {
+    try {
+      const response = await api.get('/student/resume-insights');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch resume insights');
+    }
+  },
+
+  async getStudentDashboard(): Promise<any> {
+    try {
+      const response = await api.get('/student/dashboard');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch dashboard');
     }
   },
 };

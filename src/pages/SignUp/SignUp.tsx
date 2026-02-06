@@ -38,24 +38,28 @@ export default function SignUp() {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!validate()) return;
-        
+
         setLoading(true);
         try {
             console.log('SignUp: Starting registration...');
             const response = await apiService.register({ name, email, password, role });
             console.log('SignUp: Registration successful:', response);
-            
+
             // Check if backend returns token directly after registration
             if (response.accessToken && response.user) {
                 console.log('SignUp: Storing token and user data');
                 localStorage.setItem('accessToken', response.accessToken);
                 localStorage.setItem('user', JSON.stringify(response.user));
-                
+
                 // Update auth context
                 await checkAuth();
-                
-                // Navigate to dashboard
-                navigate("/dashboard");
+
+                // Navigate to profile completion for students
+                if ((response.user?.role || role) === 'student') {
+                    navigate("/signup/details");
+                } else {
+                    navigate("/dashboard");
+                }
             } else {
                 // If no token returned, redirect to signin
                 console.log('SignUp: No token returned, redirecting to signin');
@@ -192,16 +196,16 @@ export default function SignUp() {
                     {/* Terms */}
                     <div className="text-xs text-gray-400 mt-4 flex gap-2">
                         <label className="flex items-center gap-2 cursor-pointer">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={agree}
                                 onChange={(e) => {
                                     setAgree(e.target.checked);
                                     if (errors.agree) {
                                         setErrors((prev) => ({ ...prev, agree: undefined }));
                                     }
-                                }} 
-                                className="accent-blue-500" 
+                                }}
+                                className="accent-blue-500"
                             />
                             I agree to the
                         </label>
@@ -214,8 +218,8 @@ export default function SignUp() {
                     )}
 
                     {/* Signup Button */}
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={loading}
                         className="group relative w-full h-10 mt-5 rounded-lg text-white text-sm font-medium bg-[#0f0f10] border border-white/15 overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
