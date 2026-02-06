@@ -2,12 +2,16 @@ import { motion } from 'framer-motion';
 import { Home, FileText, Target, TrendingUp, Bell, Search, Sparkles, ArrowUp, Flame, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
+import { LeetCodeHeatmap } from '@/components/ui/LeetCodeHeatmap';
+import { GitHubHeatmap } from '@/components/ui/GitHubHeatmap';
+import { useLeetCodeStats } from '@/hooks/useLeetCodeStats';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const { data: leetcodeData } = useLeetCodeStats('sarthak131');
 
   const { data: studentData, isLoading, isError } = useQuery({
     queryKey: ['studentDashboard'],
@@ -186,7 +190,7 @@ export default function StudentDashboard() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">LeetCode</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-sm font-bold text-violet-400">{studentData.leetcodeStreak}d</span>
+                      <span className="text-sm font-bold text-violet-400">{leetcodeData?.currentStreak || studentData.leetcodeStreak}d</span>
                       <TrendingUp className="w-3 h-3 text-emerald-400" />
                     </div>
                   </div>
@@ -345,25 +349,14 @@ export default function StudentDashboard() {
                   transition={{ delay: 0.8 }}
                   className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4"
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Flame className="w-4 h-4 text-violet-400" />
-                    <h3 className="text-sm font-semibold">LeetCode Problem Solving</h3>
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Flame className="w-4 h-4 text-emerald-400" />
+                      <h3 className="text-sm font-semibold">LeetCode Activity</h3>
+                    </div>
+                    <p className="text-xs text-gray-500">Daily problem-solving consistency</p>
                   </div>
-                  <ActivityHeatmap data={studentData.leetcodeData.heatmap} colorScheme="violet" />
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
-                    <div>
-                      <p className="text-[10px] text-gray-500">Current Streak</p>
-                      <p className="text-sm font-bold text-violet-400">{studentData.leetcodeData.currentStreak} days</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Longest Streak</p>
-                      <p className="text-sm font-bold text-gray-300">{studentData.leetcodeData.longestStreak} days</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Total Solved</p>
-                      <p className="text-sm font-bold text-gray-300">{studentData.leetcodeData.totalProblems}</p>
-                    </div>
-                  </div>
+                  <LeetCodeHeatmap />
                 </motion.div>
 
                 {/* GitHub Heatmap */}
@@ -373,25 +366,14 @@ export default function StudentDashboard() {
                   transition={{ delay: 0.9 }}
                   className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4"
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <Code2 className="w-4 h-4 text-cyan-400" />
-                    <h3 className="text-sm font-semibold">GitHub Coding Activity</h3>
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Code2 className="w-4 h-4 text-emerald-400" />
+                      <h3 className="text-sm font-semibold">GitHub Contributions</h3>
+                    </div>
+                    <p className="text-xs text-gray-500">Daily coding activity on GitHub</p>
                   </div>
-                  <ActivityHeatmap data={studentData.githubData.heatmap} colorScheme="cyan" />
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
-                    <div>
-                      <p className="text-[10px] text-gray-500">Current Streak</p>
-                      <p className="text-sm font-bold text-cyan-400">{studentData.githubData.currentStreak} days</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Longest Streak</p>
-                      <p className="text-sm font-bold text-gray-300">{studentData.githubData.longestStreak} days</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500">Total Contributions</p>
-                      <p className="text-sm font-bold text-gray-300">{studentData.githubData.totalContributions}</p>
-                    </div>
-                  </div>
+                  <GitHubHeatmap />
                 </motion.div>
               </div>
             </div>
