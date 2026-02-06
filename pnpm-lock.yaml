@@ -1638,6 +1638,7 @@ packages:
     resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==}
     engines: {node: '>=16 || 14 >=14.17'}
 
+<<<<<<< Updated upstream
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
@@ -1652,6 +1653,11 @@ packages:
     resolution: {integrity: sha512-DGjsQAZ2bFeAy6lHQKQocTkRibgtytW+oK/5NzEBVEP1RIxwCoyzUxdWdZ+WfHKT0b2sHfaiCF5sSqo38HeUNQ==}
     engines: {node: '>=0.10.0'}
 
+=======
+  motion-dom@12.33.0:
+    resolution: {integrity: sha512-XRPebVypsl0UM+7v0Hr8o9UAj0S2djsQWRdHBd5iVouVpMrQqAI0C/rDAT3QaYnXnHuC5hMcwDHCboNeyYjPoQ==}
+
+>>>>>>> Stashed changes
   motion-utils@12.29.2:
     resolution: {integrity: sha512-G3kc34H2cX2gI63RqU+cZq+zWRRPSsNIOjpdl9TN4AQwC4sgwYPl/Q/Obf/d53nOm569T0fYK+tcoSV50BWx8A==}
 
@@ -3396,21 +3402,27 @@ snapshots:
     dependencies:
       brace-expansion: 2.0.2
 
+<<<<<<< Updated upstream
   minimist@1.2.8: {}
 
   mkdirp@0.5.6:
     dependencies:
       minimist: 1.2.8
 
+=======
+>>>>>>> Stashed changes
   motion-dom@12.33.0:
     dependencies:
       motion-utils: 12.29.2
 
+<<<<<<< Updated upstream
   motion-react@0.15.0-alpha.1:
     dependencies:
       envify: 3.4.1
       fbjs: 0.6.1
 
+=======
+>>>>>>> Stashed changes
   motion-utils@12.29.2: {}
 
   mri@1.2.0: {}
