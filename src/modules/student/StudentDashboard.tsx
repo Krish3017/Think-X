@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { Home, FileText, Target, TrendingUp, Bell, Search, Sparkles, ArrowUp, Flame, Code2 } from 'lucide-react';
+import { Home, FileText, Target, TrendingUp, Bell, Search, Sparkles, Flame, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ActivityHeatmap } from '@/components/ui/ActivityHeatmap';
+// Removed unused ActivityHeatmap import
 import { LeetCodeHeatmap } from '@/components/ui/LeetCodeHeatmap';
 import { GitHubHeatmap } from '@/components/ui/GitHubHeatmap';
 import { useLeetCodeStats } from '@/hooks/useLeetCodeStats';
@@ -39,10 +39,10 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex">
       {/* Sidebar */}
-      <div className="w-64 bg-[#0A0A0A] border-r border-white/[0.06] flex flex-col">
-        <div className="p-6 border-b border-white/[0.06]">
+      <div className="w-64 bg-[#0A0A0A] border-r border-white/6 flex flex-col">
+        <div className="p-6 border-b border-white/6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
             <span className="text-lg font-semibold">Think-X</span>
@@ -81,12 +81,12 @@ export default function StudentDashboard() {
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full h-10 pl-10 pr-4 bg-[#050505] border border-white/[0.06] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/30"
+                className="w-full h-10 pl-10 pr-4 bg-[#050505] border border-white/6 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/30"
               />
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="w-10 h-10 rounded-lg bg-[#050505] border border-white/[0.06] flex items-center justify-center hover:border-blue-500/30 transition">
+            <button className="w-10 h-10 rounded-lg bg-[#050505] border border-white/6 flex items-center justify-center hover:border-blue-500/30 transition">
               <Bell className="w-5 h-5 text-gray-400" />
             </button>
             <button
@@ -99,7 +99,7 @@ export default function StudentDashboard() {
             >
               Logout
             </button>
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center">
               <span className="text-sm font-semibold">{studentData.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</span>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function StudentDashboard() {
                 <h3 className="text-xs font-medium text-blue-400 mb-3">Next 7-Day Focus</h3>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <Target className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <Target className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-[10px] text-gray-500">Priority Skill</p>
                       <p className="text-xs text-white font-semibold">React Hooks</p>

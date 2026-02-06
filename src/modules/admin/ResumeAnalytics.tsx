@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Target, FileText, BarChart3, Search, Bell, Sparkles, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 
 export default function ResumeAnalytics() {
@@ -189,9 +189,8 @@ export default function ResumeAnalytics() {
                         <span className="text-xs text-gray-500">{item.completion}%</span>
                       </div>
                       <div className="relative h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div className={`absolute inset-y-0 left-0 rounded-full ${
-                          item.completion >= 80 ? 'bg-emerald-500' : item.completion >= 60 ? 'bg-blue-500' : 'bg-amber-500'
-                        }`} style={{ width: `${item.completion}%` }} />
+                        <div className={`absolute inset-y-0 left-0 rounded-full ${item.completion >= 80 ? 'bg-emerald-500' : item.completion >= 60 ? 'bg-blue-500' : 'bg-amber-500'
+                          }`} style={{ width: `${item.completion}%` }} />
                       </div>
                     </div>
                   ))}

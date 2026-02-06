@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, FileText, Target, Bell, Search, Award, Brain, Sparkles, TrendingUp, Shield, Flame, Code2, Download, Share2, Calendar, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Home, FileText, Target, Bell, Search, Award, Brain, Sparkles, TrendingUp, Shield, Flame, Download, Share2, Calendar, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Report() {
@@ -243,9 +243,8 @@ export default function Report() {
                       <div className="flex-1">
                         <p className="text-xs text-gray-300">{item.risk}</p>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded flex-shrink-0 ${
-                        item.severity === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
-                      }`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded flex-shrink-0 ${item.severity === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                        }`}>
                         {item.severity}
                       </span>
                     </div>

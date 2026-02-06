@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, CheckCircle, AlertCircle, Brain, Target, Sparkles, Award, Shield, Zap, Home, Bell, Search, AlertTriangle, XCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+// Removed unused recharts imports
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/api';
@@ -96,11 +96,11 @@ export default function ResumeInsights() {
                 { section: 'Experience', score: Math.max(45, overall - 10), status: overall > 65 ? 'complete' : 'partial' },
                 { section: 'Education', score: 100, status: 'complete' },
             ],
-            skillGapData: missingSkills.map((skill) => ({ skill, current: 0, required: 80 })),
+            skillGapData: missingSkills.map((skill: string) => ({ skill, current: 0, required: 80 })),
             improvements: suggestions.length ? suggestions : ['Add measurable outcomes in experience', 'Link GitHub/portfolio'],
             missingKeywords: missingSkills.slice(0, 6),
             jobMarketMatch: Math.min(100, Math.max(50, overall + 3)),
-            redFlags: missingSkills.slice(0, 3).map((skill) => ({
+            redFlags: missingSkills.slice(0, 3).map((skill: string) => ({
                 issue: `Add evidence of ${skill}`,
                 severity: 'Medium',
             })),
@@ -188,10 +188,10 @@ export default function ResumeInsights() {
     return (
         <div className="min-h-screen bg-[#050505] text-white flex">
             {/* Sidebar */}
-            <div className="w-64 bg-[#0A0A0A] border-r border-white/[0.06] flex flex-col">
-                <div className="p-6 border-b border-white/[0.06]">
+            <div className="w-64 bg-[#0A0A0A] border-r border-white/6 flex flex-col">
+                <div className="p-6 border-b border-white/6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center">
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <span className="text-lg font-semibold">Think-X</span>
@@ -199,7 +199,7 @@ export default function ResumeInsights() {
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
                     <Link to="/student/dashboard">
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] text-gray-400 hover:text-white transition cursor-pointer">
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/3 text-gray-400 hover:text-white transition cursor-pointer">
                             <Home className="w-5 h-5" />
                             <span className="text-sm font-medium">Dashboard</span>
                         </div>
@@ -211,7 +211,7 @@ export default function ResumeInsights() {
                         </div>
                     </Link>
                     <Link to="/student/report">
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/[0.03] text-gray-400 hover:text-white transition cursor-pointer">
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/3 text-gray-400 hover:text-white transition cursor-pointer">
                             <Target className="w-5 h-5" />
                             <span className="text-sm font-medium">Report</span>
                         </div>
@@ -222,22 +222,22 @@ export default function ResumeInsights() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
                 {/* Top Header */}
-                <div className="h-16 bg-[#0A0A0A] border-b border-white/[0.06] flex items-center justify-between px-6">
+                <div className="h-16 bg-[#0A0A0A] border-b border-white/6 flex items-center justify-between px-6">
                     <div className="flex-1 max-w-md">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="w-full h-10 pl-10 pr-4 bg-[#050505] border border-white/[0.06] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/30"
+                                className="w-full h-10 pl-10 pr-4 bg-[#050505] border border-white/6 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/30"
                             />
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button className="w-10 h-10 rounded-lg bg-[#050505] border border-white/[0.06] flex items-center justify-center hover:border-blue-500/30 transition">
+                        <button className="w-10 h-10 rounded-lg bg-[#050505] border border-white/6 flex items-center justify-center hover:border-blue-500/30 transition">
                             <Bell className="w-5 h-5 text-gray-400" />
                         </button>
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center">
                             <span className="text-sm font-semibold">
                                 {dashboardData?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'ST'}
                             </span>
@@ -275,7 +275,7 @@ export default function ResumeInsights() {
                                     onDragLeave={handleDrag}
                                     onDragOver={handleDrag}
                                     onDrop={handleDrop}
-                                    className={`relative bg-[#0B0B0B] rounded-2xl border-2 border-dashed transition-all ${dragActive ? 'border-violet-500 bg-violet-500/5' : 'border-white/[0.06]'
+                                    className={`relative bg-[#0B0B0B] rounded-2xl border-2 border-dashed transition-all ${dragActive ? 'border-violet-500 bg-violet-500/5' : 'border-white/6'
                                         } ${file ? 'border-emerald-500/30' : ''}`}
                                 >
                                     <input type="file" id="resume-upload" className="hidden" accept=".pdf,.docx" onChange={handleChange} />

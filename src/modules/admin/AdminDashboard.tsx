@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, TrendingUp, AlertTriangle, Award, Target, Brain, Search, Bell, Sparkles, FileText, BarChart3, Download } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {

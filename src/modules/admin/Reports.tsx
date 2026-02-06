@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Target, FileText, BarChart3, Search, Bell, Sparkles, Download, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Users, Target, FileText, BarChart3, Search, Bell, Sparkles, Download, Calendar, TrendingUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Link } from 'react-router-dom';
 

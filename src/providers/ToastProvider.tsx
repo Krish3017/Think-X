@@ -1,5 +1,5 @@
 import { Toaster } from '@/components/ui/toaster';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   return (

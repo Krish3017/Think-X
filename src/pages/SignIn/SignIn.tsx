@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaGithub, FaGoogle, FaLock, FaMicrosoft, FaUser } from "react-icons/fa";
 import { HiEye, HiEyeOff, HiOutlineMail } from "react-icons/hi";
 import { MdWorkOutline } from "react-icons/md";
@@ -34,7 +34,7 @@ export default function SignIn() {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!validate()) return;
-        
+
         setLoading(true);
         try {
             await login(email, password, role);
@@ -165,8 +165,8 @@ export default function SignIn() {
                     </div>
 
                     {/* Sign In Button */}
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={loading}
                         className="relative group w-full h-10 rounded-lg mt-5 text-white bg-[#0f0f10] text-sm font-medium border-white/15 border transition-all overflow-hidden cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >

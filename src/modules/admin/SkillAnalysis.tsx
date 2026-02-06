@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Target, FileText, BarChart3, Search, Bell, Sparkles, Brain, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Link } from 'react-router-dom';
 
 export default function SkillAnalysis() {
