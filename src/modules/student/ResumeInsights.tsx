@@ -62,7 +62,17 @@ export default function ResumeInsights() {
         staleTime: 5 * 60 * 1000,
     });
 
+    const { data: resumeStatus, isLoading: statusLoading } = useQuery({
+        queryKey: ['resumeStatus'],
+        queryFn: () => apiService.getResumeStatus(),
+        enabled: !!user,
+        staleTime: 5 * 60 * 1000,
+    });
+
     const serverAnalysis = useMemo<AnalysisData | null>(() => {
+        // STRICT: Only compute analysis if resume exists in DB
+        if (!resumeStatus?.hasResume) return null;
+        
         const resume = dashboardData?.resumeInsights;
         if (!resume) return null;
 
@@ -95,7 +105,7 @@ export default function ResumeInsights() {
                 severity: 'Medium',
             })),
         };
-    }, [dashboardData?.resumeInsights]);
+    }, [dashboardData?.resumeInsights, resumeStatus?.hasResume]);
 
     useEffect(() => {
         if (serverAnalysis) {
@@ -157,8 +167,9 @@ export default function ResumeInsights() {
 
     const resolvedAnalysis = localAnalysis || serverAnalysis;
     const level = resolvedAnalysis ? getScoreLevel(resolvedAnalysis.strengthScore) : { text: 'No data', color: 'text-gray-400' };
+    const hasResume = resumeStatus?.hasResume || false;
 
-    if (isLoading) {
+    if (isLoading || statusLoading) {
         return (
             <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
                 <div className="text-gray-400">Loading resume insights...</div>
@@ -241,14 +252,14 @@ export default function ResumeInsights() {
                         <div className="mb-2">
                             <h1 className="text-2xl font-semibold mb-0.5">Is my resume strong enough?</h1>
                             <p className="text-sm text-gray-500">Resume-specific AI evaluation & improvements</p>
-                            {analyzed && resolvedAnalysis && (
+                            {(hasResume || analyzed) && resolvedAnalysis && (
                                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                                     <span>{resolvedAnalysis.fileName}</span>
                                     <span>•</span>
                                     <span>{resolvedAnalysis.uploadTime}</span>
                                 </div>
                             )}
-                            {!resolvedAnalysis && (
+                            {!hasResume && !analyzed && (
                                 <div className="flex items-center gap-2 mt-2 text-xs text-amber-400">
                                     <AlertCircle className="w-3.5 h-3.5" />
                                     <span>No resume analysis found. Upload a resume to see insights.</span>
@@ -257,7 +268,7 @@ export default function ResumeInsights() {
                         </div>
 
                         {/* Upload Section */}
-                        {!analyzed && (
+                        {!hasResume && !analyzed && (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                                 <div
                                     onDragEnter={handleDrag}
@@ -308,7 +319,7 @@ export default function ResumeInsights() {
 
                         {/* Analysis Results */}
                         <AnimatePresence>
-                            {analyzed && resolvedAnalysis && (
+                            {(hasResume || analyzed) && resolvedAnalysis && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                                     {/* Primary Scores */}
                                     <div className="grid grid-cols-4 gap-4">

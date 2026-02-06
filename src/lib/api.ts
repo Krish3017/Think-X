@@ -136,4 +136,13 @@ export const apiService = {
       throw new Error(error.response?.data?.message || 'Failed to fetch dashboard');
     }
   },
+
+  async getResumeStatus(): Promise<{ hasResume: boolean }> {
+    try {
+      const response = await api.get('/student/resume/status');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch resume status');
+    }
+  },
 };
