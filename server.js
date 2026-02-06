@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from '.bin/src/routes/authRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
+import studentRoutes from './src/routes/studentRoutes.js';
 
 dotenv.config();
 
@@ -15,7 +16,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/student', studentRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
