@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaGithub, FaGoogle, FaLock, FaMicrosoft, FaUser } from "react-icons/fa";
 import { HiEye, HiEyeOff, HiOutlineMail, HiUser } from "react-icons/hi";
+import { MdWorkOutline } from "react-icons/md";
 import { GradientBars } from "@/components/ui/GradientBars";
 import { Link, useNavigate } from "react-router-dom";
 import { apiService } from "@/lib/api";
@@ -10,8 +11,9 @@ export default function SignUp() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [role, setRole] = useState("student");
     const [showPassword, setShowPassword] = useState(false);
-    const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; agree?: string }>({});
+    const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; agree?: string; role?: string }>({});
     const [agree, setAgree] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -27,6 +29,7 @@ export default function SignUp() {
         if (!password) e.password = "Password is required";
         else if (password.length < 8)
             e.password = "Password must be at least 8 characters";
+        if (!role) e.role = "Role is required";
         if (!agree) e.agree = "You must accept Terms & Privacy";
         setErrors(e);
         return Object.keys(e).length === 0;
@@ -39,7 +42,7 @@ export default function SignUp() {
         setLoading(true);
         try {
             console.log('SignUp: Starting registration...');
-            const response = await apiService.register({ name, email, password });
+            const response = await apiService.register({ name, email, password, role });
             console.log('SignUp: Registration successful:', response);
             
             // Check if backend returns token directly after registration
@@ -161,8 +164,31 @@ export default function SignUp() {
                         {errors.password && (
                             <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                         )}
-                    </div>
 
+                        {/* Role */}
+                        <div className={`bg-[#0f0f0f] border rounded-lg px-3 h-10 flex items-center text-gray-300 focus-within:border-white transition ${errors.role ? "border-red-500" : "border-white/15"}`}>
+                            <span className="mr-2 text-gray-400">
+                                <MdWorkOutline />
+                            </span>
+                            <select
+                                value={role}
+                                onChange={(e) => {
+                                    setRole(e.target.value);
+                                    if (errors.role) {
+                                        setErrors((prev) => ({ ...prev, role: undefined }));
+                                    }
+                                }}
+                                className="bg-transparent outline-none w-full text-sm text-white cursor-pointer"
+                            >
+                                <option value="student" className="bg-[#0f0f0f]">Student</option>
+                                <option value="admin" className="bg-[#0f0f0f]">Admin</option>
+                                <option value="placement_cell" className="bg-[#0f0f0f]">Placement Cell</option>
+                            </select>
+                        </div>
+                        {errors.role && (
+                            <p className="text-red-500 text-xs mt-1">{errors.role}</p>
+                        )}
+                    </div>
                     {/* Terms */}
                     <div className="text-xs text-gray-400 mt-4 flex gap-2">
                         <label className="flex items-center gap-2 cursor-pointer">

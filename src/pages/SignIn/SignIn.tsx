@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaGithub, FaGoogle, FaLock, FaMicrosoft, FaUser } from "react-icons/fa";
 import { HiEye, HiEyeOff, HiOutlineMail } from "react-icons/hi";
+import { MdWorkOutline } from "react-icons/md";
 import { GradientBars } from "@/components/ui/GradientBars";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,8 +10,9 @@ import { useGuestGuard } from "@/hooks/useAuthGuard";
 export default function SignIn() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [role, setRole] = useState("student");
     const [showPassword, setShowPassword] = useState(false);
-    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+    const [errors, setErrors] = useState<{ email?: string; password?: string; role?: string }>({});
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { login } = useAuth();
@@ -24,6 +26,7 @@ export default function SignIn() {
         if (!password) e.password = "Password is required";
         else if (password.length < 8)
             e.password = "Password must be at least 8 characters";
+        if (!role) e.role = "Role is required";
         setErrors(e);
         return Object.keys(e).length === 0;
     }
@@ -34,7 +37,7 @@ export default function SignIn() {
         
         setLoading(true);
         try {
-            await login(email, password);
+            await login(email, password, role);
             navigate("/dashboard");
         } catch (error: any) {
             setErrors({ password: error.message || 'Login failed' });
@@ -123,6 +126,30 @@ export default function SignIn() {
                         </div>
                         {errors.password && (
                             <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                        )}
+
+                        {/* Role */}
+                        <div className={`bg-[#0f0f0f] border rounded-lg px-3 h-10 flex items-center text-gray-300 focus-within:border-white transition ${errors.role ? "border-red-500" : "border-white/15"}`}>
+                            <span className="mr-2 text-gray-400">
+                                <MdWorkOutline />
+                            </span>
+                            <select
+                                value={role}
+                                onChange={(e) => {
+                                    setRole(e.target.value);
+                                    if (errors.role) {
+                                        setErrors((prev) => ({ ...prev, role: undefined }));
+                                    }
+                                }}
+                                className="bg-transparent outline-none w-full text-sm text-white cursor-pointer"
+                            >
+                                <option value="student" className="bg-[#0f0f0f]">Student</option>
+                                <option value="admin" className="bg-[#0f0f0f]">Admin</option>
+                                <option value="placement_cell" className="bg-[#0f0f0f]">Placement Cell</option>
+                            </select>
+                        </div>
+                        {errors.role && (
+                            <p className="text-red-500 text-xs mt-1">{errors.role}</p>
                         )}
                     </div>
 

@@ -33,11 +33,13 @@ interface RegisterData {
   name: string;
   email: string;
   password: string;
+  role: string;
 }
 
 interface LoginData {
   email: string;
   password: string;
+  role: string;
 }
 
 interface AuthResponse {
@@ -46,6 +48,7 @@ interface AuthResponse {
     id: string;
     name: string;
     email: string;
+    role: string;
   };
 }
 
