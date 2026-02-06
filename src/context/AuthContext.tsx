@@ -43,7 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (token && storedUser) {
         const userData = JSON.parse(storedUser);
         setUser(userData);
-        await checkAuth(); // validate token with backend; clears if invalid
+        // Don't await - let it run in background
+        checkAuth();
       } else {
         setUser(null);
       }
@@ -66,33 +67,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // Trust stored user data - don't depend on API
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-
       // Background refresh: try to update user data without blocking auth
-      apiService.getMe()
-        .then(response => {
-          // Only update if response is valid
-          if (response?.user?.id) {
-            localStorage.setItem('user', JSON.stringify(response.user));
-            setUser(response.user);
-          }
-        })
-        .catch((error) => {
-          // If token is invalid, clear auth so guards don't keep redirecting
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('user');
-          setUser(null);
-          if (import.meta.env.DEV) {
-            console.warn('Background user refresh failed:', error.message);
-          }
-        });
+      const response = await apiService.getMe();
+      if (response?.user?.id) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+      }
     } catch (error) {
-      // Only clear if stored data is corrupted (JSON parse error)
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      setUser(null);
+      // Only clear if token is actually invalid (401)
+      // Keep user logged in for network errors
+      if (import.meta.env.DEV) {
+        console.warn('Background user refresh failed:', error);
+      }
     }
   };
 

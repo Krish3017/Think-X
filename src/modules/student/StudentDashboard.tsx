@@ -85,6 +85,16 @@ export default function StudentDashboard() {
             <button className="w-10 h-10 rounded-lg bg-[#050505] border border-white/[0.06] flex items-center justify-center hover:border-blue-500/30 transition">
               <Bell className="w-5 h-5 text-gray-400" />
             </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('user');
+                window.location.href = '/signin';
+              }}
+              className="px-4 h-10 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition"
+            >
+              Logout
+            </button>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
               <span className="text-sm font-semibold">{studentData.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</span>
             </div>

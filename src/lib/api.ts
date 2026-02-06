@@ -20,7 +20,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Only redirect on 401 if we're not already on signin page
+    if (error.response?.status === 401 && !window.location.pathname.includes('/signin')) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       window.location.href = '/signin';
