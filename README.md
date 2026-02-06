@@ -1,106 +1,73 @@
-# 🚀 Project Setup Guide (Main Branch)
+# React + TypeScript + Vite
 
-This repository contains the main application.
-Follow the steps below to clone, install dependencies, and run the project locally.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## 🧰 Prerequisites
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-Make sure the following are installed:
+## React Compiler
 
-- Node.js (v16 or higher)
-  https://nodejs.org
-- pnpm (package manager)
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-Install pnpm globally if not installed:
+## Expanding the ESLint configuration
 
-    npm install -g pnpm
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-Verify installation:
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-    node -v
-    pnpm -v
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
----
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
 
-## 📥 Clone the Repository
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-    git clone <repository-url>
-    cd <repository-folder>
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
----
-
-## 📦 Install Dependencies
-
-    pnpm install
-
-This command installs all required dependencies and creates the node_modules folder.
-
----
-
-## ▶️ Run the Project (Development)
-
-    pnpm dev
-
-The application will start on the port shown in the terminal
-(usually http://localhost:5173).
-
----
-
-## 🏗️ Build for Production (Optional)
-
-    pnpm build
-
-The production build will be generated in the dist folder.
-
----
-
-## 👀 Preview Production Build (Optional)
-
-    pnpm preview
-
----
-
-## 📁 Project Structure
-
-    src/          → Application source code
-    public/       → Static assets
-    package.json  → Scripts and dependencies
-
----
-
-## 🧹 Notes
-
-- node_modules is not committed to the repository.
-- Always run pnpm install after cloning the project.
-- If environment variables are required, create a .env file
-  (refer to .env.example if available).
-
----
-
-## 🛠️ Common Issues
-
-pnpm command not found:
-
-    npm install -g pnpm
-
-App not starting:
-
-    pnpm install
-    pnpm dev
-
----
-
-## 📌 Tech Stack
-
-- React
-- Vite
-- pnpm
-- TypeScript / Tailwind CSS (if applicable)
-
----
-
-## 📄 License
-
-This project is intended for educational, hackathon, or internal use.
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
