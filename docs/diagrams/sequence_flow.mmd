@@ -1,0 +1,46 @@
+%% Mermaid sequence diagram: detailed call sequence for parse and analyze
+sequenceDiagram
+  participant C as Client
+  participant F as FastAPI
+  participant R as parse_resume()/analyze_resume()
+  participant U as read_upload()
+  participant P as PdfParser
+  participant S as SkillExtractor
+  participant AS as AnalysisService
+  participant RA as ResumeAnalyzer
+  participant FB as FeatureBuilder
+  participant KM as KeywordMatcher
+  participant PP as PlacementPredictor
+  participant ATS as AtsScorer
+
+  C->>F: POST /resumes/parse (file)
+  F->>R: dispatch parse_resume()
+  R->>U: read_upload(file)
+  U-->>R: bytes
+  R->>P: PdfParser.extract_text(bytes)  (if pdf)
+  P-->>R: resume_text
+  R->>S: SkillExtractor.extract(resume_text)
+  S-->>R: extracted_skills
+  R-->>C: ResumeParseResponse{text, extracted_skills}
+
+  C->>F: POST /resumes/analyze (file, job_description, job_skills)
+  F->>R: dispatch analyze_resume()
+  R->>U: read_upload(file)
+  U-->>R: bytes
+  R->>P: PdfParser.extract_text(bytes)
+  P-->>R: resume_text
+  R->>AS: AnalysisService.analyze(AnalysisInput)
+  AS->>RA: ResumeAnalyzer.analyze()
+  RA->>S: SkillExtractor.extract(resume_text)
+  S-->>RA: extracted_skills
+  RA->>KM: KeywordMatcher.match(extracted_skills, job_skills)
+  KM-->>RA: MatchResult(matched, missing, ratio)
+  RA->>FB: FeatureBuilder.build(...)
+  FB-->>RA: FeatureRow
+  RA->>PP: PlacementPredictor.predict_proba(features_df)
+  PP-->>RA: placement_probability
+  RA->>ATS: AtsScorer.score(match_ratio, years_experience)
+  ATS-->>RA: AtsScore
+  RA-->>AS: AnalysisResult
+  AS-->>R: AnalysisResult
+  R-->>C: ResumeAnalyzeResponse{placement, ats_score, skills, recommendations}

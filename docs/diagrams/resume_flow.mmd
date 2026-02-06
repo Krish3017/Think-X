@@ -1,0 +1,45 @@
+%% Mermaid flowchart: Resume parse & analyze flow
+flowchart LR
+  Client[Client / Frontend]
+  FastAPI[FastAPI app (`src.api.app`)]
+
+  Client -->|POST /resumes/parse| FastAPI
+  Client -->|POST /resumes/analyze| FastAPI
+
+  subgraph ParseFlow [Parse Flow]
+    FastAPI --> ParseHandler[parse_resume() - `src.api.routes.resume_routes`]
+    ParseHandler --> ReadUpload[read_upload() - `src.utils.file_handler`]
+    ReadUpload --> CheckExt[file_extension()]
+    CheckExt -->|.pdf| PdfParser[PdfParser.extract_text() - `src.services.pdf_parser`]
+    CheckExt -->|.txt| TextDecode[decode text]
+    PdfParser --> SkillExtractor[SkillExtractor.extract() - `src.models.skill_extractor`]
+    TextDecode --> SkillExtractor
+    SkillExtractor --> ParseResponse[ResumeParseResponse]
+    ParseResponse --> Client
+  end
+
+  subgraph AnalyzeFlow [Analyze Flow]
+    FastAPI --> AnalyzeHandler[analyze_resume() - `src.api.routes.resume_routes`]
+    AnalyzeHandler --> ReadUpload2[read_upload()]
+    ReadUpload2 --> CheckExt2[file_extension()]
+    CheckExt2 -->|.pdf| PdfParser2[PdfParser.extract_text()]
+    CheckExt2 -->|.txt| TextDecode2[decode text]
+    PdfParser2 --> AnalysisService[AnalysisService.analyze() - `src.services.analysis_service`]
+    TextDecode2 --> AnalysisService
+    AnalysisService --> ResumeAnalyzer[ResumeAnalyzer - `src.models.resume_analyzer`]
+    ResumeAnalyzer --> SkillExtractor2[SkillExtractor.extract()]
+    ResumeAnalyzer --> KeywordMatcher[KeywordMatcher.match() - `src.models.keyword_matcher`]
+    ResumeAnalyzer --> FeatureBuilder[FeatureBuilder.build() - `src.pipeline.feature_engineering`]
+    FeatureBuilder --> DataCleaning[`data_cleaning.*`]
+    ResumeAnalyzer --> PlacementPredictor[PlacementPredictor.predict_proba() - `src.models.placement_predictor`]
+    ResumeAnalyzer --> AtsScorer[AtsScorer.score() - `src.models.ats_scorer`]
+    PlacementPredictor --> ResumeAnalyzer
+    AtsScorer --> ResumeAnalyzer
+    ResumeAnalyzer --> AnalyzeResponse[ResumeAnalyzeResponse]
+    AnalyzeResponse --> Client
+  end
+
+  %% Also show prediction routes
+  FastAPI -->|POST /predictions/predict or /predictions/batch| PredictRoutes[`src.api.routes.prediction_routes`]
+  PredictRoutes --> predict_placement[`src.inference.predict.predict_placement`]
+  predict_placement --> ResumeAnalyzerCached[ResumeAnalyzer (cached)]
