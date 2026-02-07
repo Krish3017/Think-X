@@ -58,7 +58,7 @@ export default function Reports() {
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-lg font-semibold block">Think-X</span>
+              <span className="text-lg font-semibold block">HireLens</span>
               <span className="text-[10px] text-gray-500">Admin Panel</span>
             </div>
           </div>

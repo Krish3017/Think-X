@@ -23,7 +23,7 @@ export function LeetCodeHeatmap() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://leetcode-api-faisalshohag.vercel.app/sarthak131')
+    fetch('https://leetcode-api-faisalshohag.vercel.app/Tirth_22')
       .then(res => res.json())
       .then(apiData => {
         const formattedData: LeetCodeHeatmapValue[] = Object.entries(apiData.submissionCalendar).map(([ts, count]) => ({

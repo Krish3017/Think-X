@@ -72,7 +72,7 @@ export default function ResumeInsights() {
     const serverAnalysis = useMemo<AnalysisData | null>(() => {
         // STRICT: Only compute analysis if resume exists in DB
         if (!resumeStatus?.hasResume) return null;
-        
+
         const resume = dashboardData?.resumeInsights;
         if (!resume) return null;
 
@@ -194,7 +194,7 @@ export default function ResumeInsights() {
                         <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center">
                             <Sparkles className="w-5 h-5" />
                         </div>
-                        <span className="text-lg font-semibold">Think-X</span>
+                        <span className="text-lg font-semibold">HireLens</span>
                     </div>
                 </div>
                 <nav className="flex-1 p-4 space-y-1">

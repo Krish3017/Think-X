@@ -66,7 +66,7 @@ export default function Report() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
-            <span className="text-lg font-semibold">Think-X</span>
+            <span className="text-lg font-semibold">HireLens</span>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1">
