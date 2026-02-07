@@ -18,6 +18,7 @@ from src.utils.file_handler import (
     extract_project_count,
 )
 from src.utils.validators import validate_non_empty
+from src.services.gemini_review import generate_resume_review
 
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
@@ -33,6 +34,7 @@ class ResumeParseResponse(BaseModel):
     role_ats_score: Optional[int] = None
     role_match: Optional[dict] = None
     base_ats_score: Optional[int] = None
+    resume_review: Optional[str] = None
 
 
 class ResumeAnalyzeResponse(BaseModel):
@@ -257,6 +259,13 @@ async def parse_resume(
             "missing_skills": role_match_data["missing_skills"],
         }
 
+    # Generate AI resume review (non-blocking, read-only)
+    resume_review = None
+    try:
+        resume_review = await generate_resume_review(text, skills)
+    except Exception:
+        resume_review = "AI resume review is temporarily unavailable."
+
     return ResumeParseResponse(
         text=text,
         extracted_skills=skills,
@@ -267,6 +276,7 @@ async def parse_resume(
         role_ats_score=role_ats_score,
         role_match=role_match,
         base_ats_score=ats_score if target_role != "general" else None,
+        resume_review=resume_review,
     )
 
 
