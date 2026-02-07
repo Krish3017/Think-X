@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, CheckCircle, AlertCircle, Brain, Target, Sparkles, Award, Shield, Zap, Home, Bell, Search, AlertTriangle, XCircle } from 'lucide-react';
 // Removed unused recharts imports
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,6 +23,7 @@ type AnalysisData = {
     missingKeywords: string[];
     jobMarketMatch: number;
     redFlags: { issue: string; severity: 'High' | 'Medium' }[];
+    projectCount?: number;
 };
 
 const fallbackAnalysis: AnalysisData = {
@@ -49,11 +50,14 @@ const fallbackAnalysis: AnalysisData = {
 
 export default function ResumeInsights() {
     const { user } = useAuth();
+    const queryClient = useQueryClient();
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [analyzed, setAnalyzed] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [localAnalysis, setLocalAnalysis] = useState<AnalysisData | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [projectCount, setProjectCount] = useState<number>(0);
 
     const { data: dashboardData, isLoading, isError } = useQuery({
         queryKey: ['studentDashboard'],
@@ -107,12 +111,13 @@ export default function ResumeInsights() {
         };
     }, [dashboardData?.resumeInsights, resumeStatus?.hasResume]);
 
-    useEffect(() => {
-        if (serverAnalysis) {
-            setAnalyzed(true);
-            setLocalAnalysis(null);
-        }
-    }, [serverAnalysis]);
+    // Don't auto-show analysis - only show after current session upload
+    // useEffect(() => {
+    //     if (serverAnalysis) {
+    //         setAnalyzed(true);
+    //         setLocalAnalysis(null);
+    //     }
+    // }, [serverAnalysis]);
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
@@ -140,7 +145,7 @@ export default function ResumeInsights() {
         }
     };
 
-    const handleFile = (nextFile: File) => {
+    const handleFile = async (nextFile: File) => {
         const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
         if (!validTypes.includes(nextFile.type)) {
             alert('Please upload PDF or DOCX file');
@@ -148,15 +153,36 @@ export default function ResumeInsights() {
         }
         setFile(nextFile);
         setUploading(true);
-        setTimeout(() => {
+        setUploadError(null);
+
+        try {
+            // Step 1: Upload to MLService to extract skills
+            const mlResponse = await apiService.uploadResumeToMLService(nextFile);
+            const extractedSkills = mlResponse.extracted_skills || [];
+            const projectsCount = mlResponse.project_count || 0;
+
+            // Store project count
+            setProjectCount(projectsCount);
+
+            // Step 2: Save extracted skills to backend
+            await apiService.saveStudentSkills({
+                currentSkills: [],
+                learningSkills: [],
+                extractedSkills: extractedSkills,
+                missingSkills: [],
+            });
+
+            // Step 3: Invalidate queries to refresh UI
+            await queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+            await queryClient.invalidateQueries({ queryKey: ['resumeStatus'] });
+
             setUploading(false);
             setAnalyzed(true);
-            setLocalAnalysis({
-                ...fallbackAnalysis,
-                fileName: nextFile.name,
-                uploadTime: 'Just now',
-            });
-        }, 2000);
+        } catch (error: any) {
+            console.error('Resume upload error:', error);
+            setUploadError(error.message || 'Failed to upload resume');
+            setUploading(false);
+        }
     };
 
     const getScoreLevel = (score: number) => {
@@ -167,7 +193,6 @@ export default function ResumeInsights() {
 
     const resolvedAnalysis = localAnalysis || serverAnalysis;
     const level = resolvedAnalysis ? getScoreLevel(resolvedAnalysis.strengthScore) : { text: 'No data', color: 'text-gray-400' };
-    const hasResume = resumeStatus?.hasResume || false;
 
     if (isLoading || statusLoading) {
         return (
@@ -252,23 +277,23 @@ export default function ResumeInsights() {
                         <div className="mb-2">
                             <h1 className="text-2xl font-semibold mb-0.5">Is my resume strong enough?</h1>
                             <p className="text-sm text-gray-500">Resume-specific AI evaluation & improvements</p>
-                            {(hasResume || analyzed) && resolvedAnalysis && (
+                            {analyzed && resolvedAnalysis && (
                                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                                     <span>{resolvedAnalysis.fileName}</span>
                                     <span>•</span>
                                     <span>{resolvedAnalysis.uploadTime}</span>
                                 </div>
                             )}
-                            {!hasResume && !analyzed && (
+                            {!analyzed && (
                                 <div className="flex items-center gap-2 mt-2 text-xs text-amber-400">
                                     <AlertCircle className="w-3.5 h-3.5" />
-                                    <span>No resume analysis found. Upload a resume to see insights.</span>
+                                    <span>Upload your resume to get AI-powered insights and skill analysis.</span>
                                 </div>
                             )}
                         </div>
 
                         {/* Upload Section */}
-                        {!hasResume && !analyzed && (
+                        {!analyzed && (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                                 <div
                                     onDragEnter={handleDrag}
@@ -306,7 +331,7 @@ export default function ResumeInsights() {
                                                             <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => { setFile(null); setAnalyzed(false); setLocalAnalysis(null); }} className="text-xs text-gray-400 hover:text-white transition">
+                                                    <button onClick={() => { setFile(null); setAnalyzed(false); setLocalAnalysis(null); setUploadError(null); }} className="text-xs text-gray-400 hover:text-white transition">
                                                         Remove
                                                     </button>
                                                 </div>
@@ -314,13 +339,36 @@ export default function ResumeInsights() {
                                         </div>
                                     )}
                                 </div>
+                                {uploadError && (
+                                    <div className="mt-3 flex items-center gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                                        <XCircle className="w-4 h-4" />
+                                        <span>{uploadError}</span>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
 
                         {/* Analysis Results */}
                         <AnimatePresence>
-                            {(hasResume || analyzed) && resolvedAnalysis && (
+                            {analyzed && resolvedAnalysis && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                                    {/* Upload New Resume Button */}
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                setAnalyzed(false);
+                                                setFile(null);
+                                                setLocalAnalysis(null);
+                                                setUploadError(null);
+                                                setProjectCount(0);
+                                            }}
+                                            className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/30 rounded-lg text-sm text-violet-400 transition"
+                                        >
+                                            <Upload className="w-4 h-4" />
+                                            <span>Upload New Resume</span>
+                                        </button>
+                                    </div>
+
                                     {/* Primary Scores */}
                                     <div className="grid grid-cols-4 gap-4">
                                         {/* Resume Strength */}
@@ -412,6 +460,38 @@ export default function ResumeInsights() {
                                             ))}
                                         </div>
                                     </motion.div>
+
+                                    {/* Project Count */}
+                                    {projectCount > 0 && (
+                                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className="text-sm font-semibold">Projects Detected</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="w-4 h-4 text-blue-400" />
+                                                    <span className="text-2xl font-bold text-blue-400">{projectCount}</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="text-gray-400">Project count in resume</span>
+                                                    <span className="text-gray-500">{projectCount} {projectCount === 1 ? 'project' : 'projects'}</span>
+                                                </div>
+                                                <div className="relative h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${Math.min((projectCount / 5) * 100, 100)}%` }}
+                                                        transition={{ duration: 1, delay: 0.5 }}
+                                                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+                                                        style={{ boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }}
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px]">
+                                                    <span className="text-gray-500">0</span>
+                                                    <span className="text-gray-500">Target: 5+ projects</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
 
                                     {/* Skills Section */}
                                     <div className="grid grid-cols-2 gap-4">

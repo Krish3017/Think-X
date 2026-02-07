@@ -21,7 +21,11 @@ export function GitHubHeatmap() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+<<<<<<< Updated upstream
     fetch('https://github-contributions-api.jogruber.de/v4/Tirth-22')
+=======
+    fetch('https://github-contributions-api.jogruber.de/v4/harshitpambhar')
+>>>>>>> Stashed changes
       .then(res => res.json())
       .then(apiData => {
         const formattedData: GitHubHeatmapValue[] = apiData.contributions.map((contrib: any) => ({

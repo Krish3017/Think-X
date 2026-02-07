@@ -89,6 +89,30 @@ export const apiService = {
     }
   },
 
+  // GET profile + skills from DB (dedicated endpoint)
+  async getStudentProfile(): Promise<{
+    profile: {
+      rollNo: string;
+      name: string;
+      branch: string;
+      joinedYear: number;
+      semester: number;
+      cgpa: number;
+      email: string;
+      githubUsername: string;
+      leetcodeUsername: string;
+    } | null;
+    currentSkills: { name: string; progress: number; proficiency_level: string }[];
+    learningSkills: { name: string; progress: number }[];
+  }> {
+    try {
+      const response = await api.get('/student/profile');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch profile');
+    }
+  },
+
   async saveStudentProfile(data: {
     rollNo: string;
     name: string;
@@ -96,7 +120,7 @@ export const apiService = {
     joinedYear: number;
     semester: number;
     cgpa?: number;
-  }): Promise<{ message: string }> {
+  }): Promise<{ success: boolean; message: string; profile: any }> {
     try {
       const response = await api.post('/student/profile', data);
       return response.data;
@@ -110,7 +134,7 @@ export const apiService = {
     learningSkills: { name: string; progress?: number; level?: string }[];
     extractedSkills?: string[];
     missingSkills?: string[];
-  }): Promise<{ message: string }> {
+  }): Promise<{ success: boolean; message: string; currentSkills: any[]; learningSkills: any[] }> {
     try {
       const response = await api.post('/student/skills', data);
       return response.data;
@@ -143,6 +167,23 @@ export const apiService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch resume status');
+    }
+  },
+
+  async uploadResumeToMLService(file: File): Promise<{ text: string; extracted_skills: string[]; project_count: number }> {
+    const ML_SERVICE_URL = import.meta.env.VITE_ML_SERVICE_URL || 'http://localhost:8000';
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post(`${ML_SERVICE_URL}/resumes/parse`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Failed to parse resume');
     }
   },
 };

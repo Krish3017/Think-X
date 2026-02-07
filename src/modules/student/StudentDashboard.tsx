@@ -1,17 +1,20 @@
 import { motion } from 'framer-motion';
 import { Home, FileText, Target, TrendingUp, Bell, Search, Sparkles, Flame, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-// Removed unused ActivityHeatmap import
 import { LeetCodeHeatmap } from '@/components/ui/LeetCodeHeatmap';
 import { GitHubHeatmap } from '@/components/ui/GitHubHeatmap';
 import { useLeetCodeStats } from '@/hooks/useLeetCodeStats';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { data: leetcodeData } = useLeetCodeStats('sarthak131');
+  const [currentSkillsDB, setCurrentSkillsDB] = useState<any[]>([]);
+  const [learningSkillsDB, setLearningSkillsDB] = useState<any[]>([]);
 
   const { data: studentData, isLoading, isError } = useQuery({
     queryKey: ['studentDashboard'],
@@ -19,6 +22,23 @@ export default function StudentDashboard() {
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        const response = await axios.get('http://localhost:5000/api/student/skills-list', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCurrentSkillsDB(response.data.current_skills || []);
+        setLearningSkillsDB(response.data.skills_to_learn || []);
+      } catch (error) {
+        // Silently fail - skills are optional
+      }
+    };
+    if (user) fetchSkills();
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -99,9 +119,11 @@ export default function StudentDashboard() {
             >
               Logout
             </button>
-            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-              <span className="text-sm font-semibold">{studentData.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</span>
-            </div>
+            <Link to="/student/profile">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center cursor-pointer hover:opacity-80 transition">
+                <span className="text-sm font-semibold">{studentData.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</span>
+              </div>
+            </Link>
           </div>
         </div>
 
@@ -264,7 +286,7 @@ export default function StudentDashboard() {
                       style={{ boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)' }}
                     />
                   </div>
-                  <p className="text-[10px] text-gray-500">7 of 12 core skills</p>
+                  <p className="text-[10px] text-gray-500">{studentData.currentSkills?.length || 0} of {(studentData.currentSkills?.length || 0) + (studentData.skillsToLearn?.length || 0)} core skills</p>
                 </div>
               </motion.div>
 
@@ -276,17 +298,36 @@ export default function StudentDashboard() {
                 className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4"
               >
                 <h3 className="text-xs font-medium text-gray-400 mb-3">Skills to Learn</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {studentData.skillsToLearn.map((skill: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[10px] text-gray-500 mt-3">5 skills for 100%</p>
+                {learningSkillsDB.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {learningSkillsDB.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md"
+                      >
+                        {skill.skill_name}
+                      </span>
+                    ))}
+                  </div>
+                ) : studentData.skillsToLearn && studentData.skillsToLearn.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {studentData.skillsToLearn.map((skill: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-gray-500">No learning goals yet</p>
+                )}
+                <Link to="/student/profile" className="block mt-3">
+                  <p className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer transition">
+                    Manage skills →
+                  </p>
+                </Link>
               </motion.div>
 
               {/* Skill Progress Tracker */}
@@ -297,22 +338,52 @@ export default function StudentDashboard() {
                 className="col-span-2 bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4"
               >
                 <h3 className="text-xs font-medium text-gray-400 mb-3">Skill Progress Tracker</h3>
-                <div className="space-y-2">
-                  {studentData.skillProgress.map((skill: { name: string; progress: number }, idx: number) => (
-                    <div key={idx}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-300">{skill.name}</span>
-                        <span className="text-xs text-gray-500">{skill.progress}%</span>
+                {currentSkillsDB.length > 0 ? (
+                  <div className="space-y-2">
+                    {currentSkillsDB.map((skill: any, idx: number) => (
+                      <div key={idx}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-300">{skill.skill_name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-blue-400">{skill.progress}%</span>
+                            <span className="text-[10px] text-gray-500 capitalize">{skill.proficiency_level}</span>
+                          </div>
+                        </div>
+                        <div className="relative h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${skill.progress}%` }}
+                            transition={{ delay: 0.6 + idx * 0.1, duration: 0.8 }}
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full"
+                            style={{ boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' }}
+                          />
+                        </div>
                       </div>
-                      <div className="relative h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                        <div
-                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full"
-                          style={{ width: `${skill.progress}%`, boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' }}
-                        />
+                    ))}
+                  </div>
+                ) : studentData.currentSkillsWithProgress && studentData.currentSkillsWithProgress.length > 0 ? (
+                  <div className="space-y-2">
+                    {studentData.currentSkillsWithProgress.map((skill: { name: string; progress: number }, idx: number) => (
+                      <div key={idx}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-300">{skill.name}</span>
+                          <span className="text-xs font-semibold text-blue-400">{skill.progress}%</span>
+                        </div>
+                        <div className="relative h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${skill.progress}%` }}
+                            transition={{ delay: 0.6 + idx * 0.1, duration: 0.8 }}
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full"
+                            style={{ boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-gray-500 text-center py-4">No skills tracked yet. Go to Profile to add skills.</p>
+                )}
               </motion.div>
             </div>
 

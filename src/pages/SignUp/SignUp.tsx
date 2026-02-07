@@ -54,12 +54,8 @@ export default function SignUp() {
                 // Update auth context
                 await checkAuth();
 
-                // Navigate to profile completion for students
-                if ((response.user?.role || role) === 'student') {
-                    navigate("/signup/details");
-                } else {
-                    navigate("/dashboard");
-                }
+                // Navigate directly to dashboard for all roles
+                navigate("/student/dashboard");
             } else {
                 // If no token returned, redirect to signin
                 console.log('SignUp: No token returned, redirecting to signin');
