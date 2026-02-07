@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from fastapi import UploadFile
@@ -37,3 +38,47 @@ def split_skill_list(raw: str | None) -> list[str]:
     for sep in separators:
         value = value.replace(sep, " ")
     return [item.strip() for item in value.split() if item.strip()]
+
+
+def extract_project_count(resume_text: str) -> int:
+    """Extract project count from resume text using rule-based parsing.
+
+    Args:
+        resume_text: Full resume text
+
+    Returns:
+        Number of projects found in the resume
+    """
+    lines = resume_text.splitlines()
+
+    in_projects = False
+    project_count = 0
+
+    for line in lines:
+        clean = line.strip()
+        if not clean:
+            continue
+
+        lower = clean.lower()
+
+        if lower.startswith(("projects", "academic projects", "personal projects")):
+            in_projects = True
+            continue
+
+        if in_projects and lower.startswith(
+            (
+                "experience",
+                "education",
+                "skills",
+                "certifications",
+                "achievements",
+                "hackathons",
+                "strengths",
+            )
+        ):
+            break
+
+        if in_projects and lower.startswith("tech stack"):
+            project_count += 1
+
+    return project_count
