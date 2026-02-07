@@ -58,6 +58,9 @@ export default function ResumeInsights() {
     const [localAnalysis, setLocalAnalysis] = useState<AnalysisData | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [projectCount, setProjectCount] = useState<number>(0);
+    const [selectedRole, setSelectedRole] = useState<string>('general');
+    const [roleMatchedSkills, setRoleMatchedSkills] = useState<string[]>([]);
+    const [roleMissingSkills, setRoleMissingSkills] = useState<string[]>([]);
 
     const { data: dashboardData, isLoading, isError } = useQuery({
         queryKey: ['studentDashboard'],
@@ -103,7 +106,9 @@ export default function ResumeInsights() {
             skillGapData: missingSkills.map((skill: string) => ({ skill, current: 0, required: 80 })),
             improvements: suggestions.length ? suggestions : ['Add measurable outcomes in experience', 'Link GitHub/portfolio'],
             missingKeywords: missingSkills.slice(0, 6),
-            jobMarketMatch: Math.min(100, Math.max(50, overall + 3)),
+            jobMarketMatch: missingSkills.length + detectedSkills.length > 0
+                ? Math.round((detectedSkills.length / (detectedSkills.length + missingSkills.length)) * 100)
+                : Math.min(40, Math.round(overall * 0.4)),
             redFlags: missingSkills.slice(0, 3).map((skill: string) => ({
                 issue: `Add evidence of ${skill}`,
                 severity: 'Medium',
@@ -145,7 +150,7 @@ export default function ResumeInsights() {
         }
     };
 
-    const handleFile = async (nextFile: File) => {
+    const handleFile = async (nextFile: File, role: string = 'general') => {
         const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
         if (!validTypes.includes(nextFile.type)) {
             alert('Please upload PDF or DOCX file');
@@ -157,12 +162,65 @@ export default function ResumeInsights() {
 
         try {
             // Step 1: Upload to MLService to extract skills
-            const mlResponse = await apiService.uploadResumeToMLService(nextFile);
+            const mlResponse = await apiService.uploadResumeToMLService(nextFile, role);
             const extractedSkills = mlResponse.extracted_skills || [];
             const projectsCount = mlResponse.project_count || 0;
+            const atsScore = mlResponse.ats_score || 65;
+            const atsBreakdown = mlResponse.ats_breakdown || {
+                skills_score: 26,
+                experience_score: 18,
+                structure_score: 15,
+                keyword_score: 6
+            };
+            const roleAtsScore = mlResponse.role_ats_score || atsScore;
+            const roleMatch = mlResponse.role_match;
 
-            // Store project count
             setProjectCount(projectsCount);
+            setSelectedRole(role);
+
+            if (roleMatch) {
+                setRoleMatchedSkills(roleMatch.matched_skills || []);
+                setRoleMissingSkills(roleMatch.missing_skills || []);
+            } else {
+                setRoleMatchedSkills([]);
+                setRoleMissingSkills([]);
+            }
+
+            // Compute market match from role match ratio (dynamic, not constant)
+            const matchedCount = roleMatch ? (roleMatch.matched_skills || []).length : 0;
+            const totalRoleSkills = roleMatch ? matchedCount + (roleMatch.missing_skills || []).length : 0;
+            const computedMarketMatch = totalRoleSkills > 0
+                ? Math.round((matchedCount / totalRoleSkills) * 100)
+                : Math.min(40, Math.round(atsScore * 0.4));
+
+            setLocalAnalysis({
+                fileName: nextFile.name,
+                uploadTime: 'Just now',
+                strengthScore: roleAtsScore,
+                skillMatch: Math.min(100, roleAtsScore + 5),
+                atsScore: roleAtsScore,
+                keywordCoverage: atsBreakdown.keyword_score ? Math.round((atsBreakdown.keyword_score / 10) * 100) : 60,
+                detectedSkills: extractedSkills,
+                missingSkills: [],
+                sectionCompleteness: [
+                    { section: 'Skills', score: atsBreakdown.skills_score ? Math.round((atsBreakdown.skills_score / 40) * 100) : 70, status: atsBreakdown.skills_score > 25 ? 'complete' : 'partial' },
+                    { section: 'Projects', score: projectsCount > 0 ? Math.min(100, projectsCount * 20) : 50, status: projectsCount > 2 ? 'complete' : 'partial' },
+                    { section: 'Experience', score: atsBreakdown.experience_score ? Math.round((atsBreakdown.experience_score / 30) * 100) : 60, status: atsBreakdown.experience_score > 15 ? 'complete' : 'partial' },
+                    { section: 'Education', score: atsBreakdown.structure_score ? Math.round((atsBreakdown.structure_score / 20) * 100) : 90, status: 'complete' },
+                ],
+                skillGapData: [],
+                improvements: [
+                    atsScore < 60 ? 'Add more relevant skills to your resume' : 'Strong skill coverage',
+                    projectsCount < 3 ? 'Include more project details' : 'Good project showcase',
+                    atsBreakdown.keyword_score < 6 ? 'Add industry-relevant keywords' : 'Good keyword usage',
+                ],
+                missingKeywords: [],
+                jobMarketMatch: computedMarketMatch,
+                redFlags: atsScore < 60 ? [
+                    { issue: 'Resume needs more technical skills', severity: 'Medium' as const },
+                ] : [],
+                projectCount: projectsCount,
+            });
 
             // Step 2: Save extracted skills to backend
             await apiService.saveStudentSkills({
@@ -353,7 +411,29 @@ export default function ResumeInsights() {
                             {analyzed && resolvedAnalysis && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                                     {/* Upload New Resume Button */}
-                                    <div className="flex justify-end">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <label className="text-sm text-gray-400">Analyze for role:</label>
+                                            <select
+                                                value={selectedRole}
+                                                onChange={async (e) => {
+                                                    const role = e.target.value;
+                                                    if (file && role !== selectedRole) {
+                                                        setUploading(true);
+                                                        await handleFile(file, role);
+                                                    }
+                                                }}
+                                                disabled={uploading}
+                                                className="px-4 py-2 bg-[#0B0B0B] border border-white/[0.06] rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/30 disabled:opacity-50 cursor-pointer"
+                                            >
+                                                <option value="general">General</option>
+                                                <option value="frontend">Frontend Developer</option>
+                                                <option value="backend">Backend Developer</option>
+                                                <option value="fullstack">Full Stack Developer</option>
+                                                <option value="cloud">Cloud / DevOps</option>
+                                                <option value="ml">Data / ML Engineer</option>
+                                            </select>
+                                        </div>
                                         <button
                                             onClick={() => {
                                                 setAnalyzed(false);
@@ -361,6 +441,9 @@ export default function ResumeInsights() {
                                                 setLocalAnalysis(null);
                                                 setUploadError(null);
                                                 setProjectCount(0);
+                                                setSelectedRole('general');
+                                                setRoleMatchedSkills([]);
+                                                setRoleMissingSkills([]);
                                             }}
                                             className="flex items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/30 rounded-lg text-sm text-violet-400 transition"
                                         >
@@ -421,11 +504,20 @@ export default function ResumeInsights() {
                                         {/* ATS Score */}
                                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4">
                                             <div className="flex items-start justify-between mb-2">
-                                                <h3 className="text-xs font-medium text-gray-400">ATS Compatible</h3>
+                                                <h3 className="text-xs font-medium text-gray-400">
+                                                    {selectedRole === 'general' ? 'ATS Compatible' : `ATS for ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`}
+                                                </h3>
                                                 <Shield className="w-4 h-4 text-cyan-400" />
                                             </div>
                                             <div className="text-2xl font-bold mb-2">{resolvedAnalysis.atsScore}%</div>
-                                            <p className="text-[10px] text-gray-500 leading-tight">Passes most ATS systems</p>
+                                            <p className="text-[10px] text-gray-500 leading-tight">
+                                                {selectedRole === 'general'
+                                                    ? 'Passes most ATS systems'
+                                                    : roleMatchedSkills.length === 0
+                                                        ? `Low score: No ${selectedRole} skills found`
+                                                        : `${roleMatchedSkills.length} of ${roleMatchedSkills.length + roleMissingSkills.length} role skills matched`
+                                                }
+                                            </p>
                                         </motion.div>
 
                                         {/* Job Market Match */}
@@ -493,6 +585,39 @@ export default function ResumeInsights() {
                                         </motion.div>
                                     )}
 
+                                    {/* Role-Specific Analysis */}
+                                    {selectedRole !== 'general' && (
+                                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-2xl border border-blue-500/20 p-4">
+                                            <h3 className="text-sm font-semibold mb-3 text-blue-400">
+                                                Role Analysis: {selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Developer
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <h4 className="text-xs text-gray-400 mb-2">Matched Role Skills</h4>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {roleMatchedSkills.length === 0 && <span className="text-xs text-gray-500">No matching skills found</span>}
+                                                        {roleMatchedSkills.map((skill, idx) => (
+                                                            <span key={idx} className="px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-400 font-medium">
+                                                                {skill}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs text-gray-400 mb-2">Missing Role Skills</h4>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {roleMissingSkills.length === 0 && <span className="text-xs text-gray-500">All skills present</span>}
+                                                        {roleMissingSkills.map((skill, idx) => (
+                                                            <span key={idx} className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400 font-medium">
+                                                                {skill}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
                                     {/* Skills Section */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4">
@@ -525,6 +650,8 @@ export default function ResumeInsights() {
                                             </div>
                                         </motion.div>
                                     </div>
+
+
 
                                     {/* Resume Keyword Analysis */}
                                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="bg-[#0B0B0B] rounded-2xl border border-white/[0.06] p-4">
