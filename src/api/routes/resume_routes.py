@@ -262,7 +262,12 @@ async def parse_resume(
     # Generate AI resume review (non-blocking, read-only)
     resume_review = None
     try:
-        resume_review = await generate_resume_review(text, skills)
+        resume_review = await generate_resume_review(
+            text=text,
+            extracted_skills=skills,
+            target_role=target_role,
+        )
+
     except Exception:
         resume_review = "AI resume review is temporarily unavailable."
 

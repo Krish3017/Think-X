@@ -13,7 +13,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def generate_resume_review(text: str, extracted_skills: list[str]) -> str | None:
+async def generate_resume_review(
+    text: str,
+    extracted_skills: list[str],
+    target_role: str = "general",
+) -> str | None:
+
     """Generate a concise resume review using Gemini.
 
     Returns the review string, or None if Gemini is unavailable/fails.
@@ -35,8 +40,11 @@ async def generate_resume_review(text: str, extracted_skills: list[str]) -> str 
 
         prompt = f"""You are a professional resume reviewer.
 
+Review the resume from the perspective of a "{target_role}" role.
+
 Based ONLY on the resume text and extracted skills below,
 write a concise, honest review of the resume.
+
 
 Rules:
 - Do NOT calculate ATS score
@@ -55,10 +63,11 @@ Extracted Skills:
 {skills_str}
 
 Review Guidelines:
-1. Overall resume quality
-2. Strengths based on skills and projects
-3. Weaknesses or gaps (high-level)
-4. One or two practical improvement suggestions
+1. Suitability of the resume for the "{target_role}" role
+2. Strengths relevant to this role based on skills and projects
+3. Gaps or weaknesses for this role (high-level)
+4. One or two practical improvement suggestions for this role
+
 
 Return plain text only."""
 
