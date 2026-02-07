@@ -58,6 +58,7 @@ export default function ResumeInsights() {
     const [localAnalysis, setLocalAnalysis] = useState<AnalysisData | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [projectCount, setProjectCount] = useState<number>(0);
+    const [resumeReview, setResumeReview] = useState<string | null>(null);
     const [selectedRole, setSelectedRole] = useState<string>('general');
     const [roleMatchedSkills, setRoleMatchedSkills] = useState<string[]>([]);
     const [roleMissingSkills, setRoleMissingSkills] = useState<string[]>([]);
@@ -174,6 +175,9 @@ export default function ResumeInsights() {
             };
             const roleAtsScore = mlResponse.role_ats_score || atsScore;
             const roleMatch = mlResponse.role_match;
+
+            // Set AI resume review if available
+            setResumeReview(mlResponse.resume_review || null);
 
             setProjectCount(projectsCount);
             setSelectedRole(role);
@@ -418,6 +422,7 @@ export default function ResumeInsights() {
                                                 value={selectedRole}
                                                 onChange={async (e) => {
                                                     const role = e.target.value;
+                                                    setSelectedRole(role);
                                                     if (file && role !== selectedRole) {
                                                         setUploading(true);
                                                         await handleFile(file, role);
@@ -694,6 +699,20 @@ export default function ResumeInsights() {
                                             ))}
                                         </div>
                                     </motion.div>
+
+                                    {/* AI Resume Review */}
+                                    {resumeReview && (
+                                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85 }} className="bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/10 rounded-2xl border border-emerald-500/20 p-4"
+                                            style={{ boxShadow: '0 0 25px rgba(16, 185, 129, 0.08)' }}>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Sparkles className="w-4 h-4 text-emerald-400" />
+                                                <h3 className="text-sm font-semibold">AI Resume Review</h3>
+                                            </div>
+                                            <p className="text-xs text-gray-300 whitespace-pre-line leading-relaxed max-h-48 overflow-y-auto">
+                                                {resumeReview}
+                                            </p>
+                                        </motion.div>
+                                    )}
 
                                     {/* Improvements */}
                                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="bg-gradient-to-br from-violet-500/10 via-blue-500/10 to-cyan-500/10 rounded-2xl border border-violet-500/20 p-4"

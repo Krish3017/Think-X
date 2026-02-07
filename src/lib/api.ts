@@ -170,15 +170,16 @@ export const apiService = {
     }
   },
 
-  async uploadResumeToMLService(file: File, targetRole: string = 'general'): Promise<{ 
-    text: string; 
-    extracted_skills: string[]; 
-    project_count: number; 
-    ats_score: number; 
+  async uploadResumeToMLService(file: File, targetRole: string = 'general'): Promise<{
+    text: string;
+    extracted_skills: string[];
+    project_count: number;
+    ats_score: number;
     ats_breakdown: { skills_score: number; experience_score: number; structure_score: number; keyword_score: number };
     target_role?: string;
     role_ats_score?: number;
     role_match?: { matched_skills: string[]; missing_skills: string[] };
+    resume_review?: string;
   }> {
     const ML_SERVICE_URL = import.meta.env.VITE_ML_SERVICE_URL || 'http://localhost:8000';
     const formData = new FormData();
