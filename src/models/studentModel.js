@@ -17,6 +17,9 @@ export const studentModel = {
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [userId, rollNo, name, branch, joinedYear, semester, cgpa]
             );
+            console.log(`✅ DB: Inserted new student profile for user_id ${userId}`);
+        } else {
+            console.log(`✅ DB: Updated student profile for user_id ${userId}`);
         }
     },
 
@@ -64,8 +67,10 @@ export const studentModel = {
             }
 
             await conn.commit();
+            console.log(`✅ DB: Replaced skills for student_id ${studentId}: ${currentSkills.length} current, ${learningSkills.length} learning`);
         } catch (err) {
             await conn.rollback();
+            console.error(`❌ DB: Failed to replace skills for student_id ${studentId}:`, err);
             throw err;
         } finally {
             conn.release();

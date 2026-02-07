@@ -1,8 +1,71 @@
 import { studentModel } from '../models/studentModel.js';
+import pool from '../config/db.js';
+
+// CRITICAL HELPER: Resolve student_id from user_id
+async function getStudentIdFromUser(userId) {
+    const [rows] = await pool.query(
+        'SELECT id FROM students WHERE user_id = ?',
+        [userId]
+    );
+    if (rows.length === 0) {
+        throw new Error('Student profile does not exist');
+    }
+    return rows[0].id;
+}
 
 export const studentController = {
-    // POST /api/student/profile - Save/Update student profile
+    // GET /api/student/profile - Fetch profile + skills from DB
+    async getProfile(req, res) {
+        try {
+            const userId = req.user.id;
+            const profile = await studentModel.getProfileByUserId(userId);
+
+            if (!profile) {
+                return res.json({
+                    profile: null,
+                    currentSkills: [],
+                    learningSkills: [],
+                });
+            }
+
+            const studentId = profile.id;
+            const skills = await studentModel.getSkills(studentId);
+
+            const currentSkills = skills.filter(s => s.is_current).map(s => ({
+                name: s.skill_name,
+                progress: s.progress,
+                proficiency_level: s.proficiency_level,
+            }));
+
+            const learningSkills = skills.filter(s => !s.is_current).map(s => ({
+                name: s.skill_name,
+                progress: s.progress,
+            }));
+
+            res.json({
+                profile: {
+                    rollNo: profile.roll_no,
+                    name: profile.name,
+                    branch: profile.branch,
+                    joinedYear: profile.joined_year,
+                    semester: profile.semester,
+                    cgpa: profile.cgpa,
+                    email: profile.email,
+                    githubUsername: profile.github_username || '',
+                    leetcodeUsername: profile.leetcode_username || '',
+                },
+                currentSkills,
+                learningSkills,
+            });
+        } catch (error) {
+            console.error('Get profile error:', error);
+            res.status(500).json({ message: 'Failed to fetch profile' });
+        }
+    },
+
+    // POST /api/student/profile - Save/Update student profile (TRANSACTIONAL)
     async updateProfile(req, res) {
+        const connection = await pool.getConnection();
         try {
             const userId = req.user.id;
             const { rollNo, name, branch, joinedYear, semester, cgpa } = req.body;
@@ -11,25 +74,63 @@ export const studentController = {
                 return res.status(400).json({ message: 'rollNo, name, branch, joinedYear, semester are required' });
             }
 
-            await studentModel.upsertProfile({
-                userId,
-                rollNo,
-                name,
-                branch,
-                joinedYear,
-                semester,
-                cgpa: cgpa ?? null,
-            });
+            await connection.beginTransaction();
 
-            res.json({ message: 'Profile saved' });
+            // Check if student exists
+            const [existing] = await connection.execute(
+                'SELECT id FROM students WHERE user_id = ?',
+                [userId]
+            );
+
+            if (existing.length > 0) {
+                // UPDATE
+                await connection.execute(
+                    `UPDATE students SET roll_no = ?, name = ?, branch = ?, joined_year = ?, semester = ?, cgpa = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+                    [rollNo, name, branch, joinedYear, semester, cgpa ?? null, userId]
+                );
+                console.log(`✅ DB: Updated student profile for user_id ${userId}`);
+            } else {
+                // INSERT
+                await connection.execute(
+                    `INSERT INTO students (user_id, roll_no, name, branch, joined_year, semester, cgpa) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [userId, rollNo, name, branch, joinedYear, semester, cgpa ?? null]
+                );
+                console.log(`✅ DB: Inserted new student profile for user_id ${userId}`);
+            }
+
+            await connection.commit();
+
+            // VERIFY: Re-read from DB and return persisted data
+            const savedProfile = await studentModel.getProfileByUserId(userId);
+            if (!savedProfile) {
+                throw new Error('Profile save verification failed - data not found in DB after commit');
+            }
+
+            res.json({
+                success: true,
+                message: 'Profile saved',
+                profile: {
+                    rollNo: savedProfile.roll_no,
+                    name: savedProfile.name,
+                    branch: savedProfile.branch,
+                    joinedYear: savedProfile.joined_year,
+                    semester: savedProfile.semester,
+                    cgpa: savedProfile.cgpa,
+                    email: savedProfile.email,
+                },
+            });
         } catch (error) {
+            await connection.rollback();
             console.error('Update profile error:', error);
             res.status(500).json({ message: 'Failed to save profile' });
+        } finally {
+            connection.release();
         }
     },
 
-    // POST /api/student/skills - Replace skills (current and learning)
+    // POST /api/student/skills - Upsert skills (TRANSACTIONAL, NO DELETE)
     async updateSkills(req, res) {
+        const connection = await pool.getConnection();
         try {
             const userId = req.user.id;
             const {
@@ -39,23 +140,125 @@ export const studentController = {
                 missingSkills = [],
             } = req.body || {};
 
-            // Resolve student_id
+            // Resolve student_id from user_id
             const profile = await studentModel.getProfileByUserId(userId);
             if (!profile) {
-                return res.status(404).json({ message: 'Student profile not found' });
+                return res.status(404).json({ message: 'Student profile not found. Please create your profile first.' });
             }
 
-            await studentModel.replaceSkills(profile.id, { currentSkills, learningSkills });
+            const studentId = profile.id;
 
-            await studentModel.upsertResumeSkills(profile.id, {
-                detectedSkills: extractedSkills,
-                missingSkills,
+            await connection.beginTransaction();
+
+            // UPSERT current skills (is_current = true)
+            for (const skill of currentSkills) {
+                const skillName = (skill.name || '').trim();
+                if (!skillName) continue;
+                const progress = Number.isFinite(skill.progress) ? skill.progress : 0;
+                let profLevel = skill.level || 'beginner';
+                if (progress > 75) profLevel = 'expert';
+                else if (progress > 50) profLevel = 'advanced';
+                else if (progress > 25) profLevel = 'intermediate';
+
+                const [existingSkill] = await connection.execute(
+                    'SELECT id FROM student_skills WHERE student_id = ? AND skill_name = ?',
+                    [studentId, skillName]
+                );
+
+                if (existingSkill.length > 0) {
+                    await connection.execute(
+                        'UPDATE student_skills SET proficiency_level = ?, progress = ?, is_current = ? WHERE student_id = ? AND skill_name = ?',
+                        [profLevel, progress, true, studentId, skillName]
+                    );
+                } else {
+                    await connection.execute(
+                        'INSERT INTO student_skills (student_id, skill_name, proficiency_level, progress, is_current) VALUES (?, ?, ?, ?, ?)',
+                        [studentId, skillName, profLevel, progress, true]
+                    );
+                }
+            }
+
+            // UPSERT learning skills (is_current = false)
+            for (const skill of learningSkills) {
+                const skillName = (skill.name || '').trim();
+                if (!skillName) continue;
+
+                const [existingSkill] = await connection.execute(
+                    'SELECT id FROM student_skills WHERE student_id = ? AND skill_name = ?',
+                    [studentId, skillName]
+                );
+
+                if (existingSkill.length > 0) {
+                    await connection.execute(
+                        'UPDATE student_skills SET is_current = ?, progress = 0 WHERE student_id = ? AND skill_name = ?',
+                        [false, studentId, skillName]
+                    );
+                } else {
+                    await connection.execute(
+                        'INSERT INTO student_skills (student_id, skill_name, proficiency_level, progress, is_current) VALUES (?, ?, ?, ?, ?)',
+                        [studentId, skillName, 'beginner', 0, false]
+                    );
+                }
+            }
+
+            // Remove skills that were removed by the user (not in either list)
+            const allSentSkillNames = [
+                ...currentSkills.map(s => (s.name || '').trim()).filter(Boolean),
+                ...learningSkills.map(s => (s.name || '').trim()).filter(Boolean),
+            ];
+
+            if (allSentSkillNames.length > 0) {
+                const placeholders = allSentSkillNames.map(() => '?').join(',');
+                await connection.execute(
+                    `DELETE FROM student_skills WHERE student_id = ? AND skill_name NOT IN (${placeholders})`,
+                    [studentId, ...allSentSkillNames]
+                );
+            }
+
+            await connection.commit();
+
+            // Handle resume skills separately (don't fail main skills save)
+            try {
+                if (extractedSkills.length > 0 || missingSkills.length > 0) {
+                    await studentModel.upsertResumeSkills(studentId, {
+                        detectedSkills: extractedSkills,
+                        missingSkills,
+                    });
+                }
+            } catch (resumeErr) {
+                console.warn('Resume skills upsert warning (non-fatal):', resumeErr.message);
+            }
+
+            // VERIFY: Re-read from DB and return persisted data
+            const [savedSkills] = await pool.query(
+                'SELECT * FROM student_skills WHERE student_id = ? ORDER BY is_current DESC, progress DESC',
+                [studentId]
+            );
+
+            const savedCurrentSkills = savedSkills.filter(s => s.is_current).map(s => ({
+                name: s.skill_name,
+                progress: s.progress,
+                proficiency_level: s.proficiency_level,
+            }));
+
+            const savedLearningSkills = savedSkills.filter(s => !s.is_current).map(s => ({
+                name: s.skill_name,
+                progress: s.progress,
+            }));
+
+            console.log(`✅ Skills saved for student ${studentId}: ${savedCurrentSkills.length} current, ${savedLearningSkills.length} learning`);
+            res.json({
+                success: true,
+                message: 'Skills saved',
+                currentSkills: savedCurrentSkills,
+                learningSkills: savedLearningSkills,
             });
-
-            res.json({ message: 'Skills saved' });
         } catch (error) {
+            await connection.rollback();
             console.error('Update skills error:', error);
             res.status(500).json({ message: 'Failed to save skills' });
+        } finally {
+            connection.release();
         }
     },
 
@@ -88,6 +291,26 @@ export const studentController = {
         } catch (error) {
             console.error('Get resume skills error:', error);
             res.status(500).json({ message: 'Failed to fetch resume skills' });
+        }
+    },
+
+    // GET /api/student/resume/status - Check if student has resume
+    async getResumeStatus(req, res) {
+        try {
+            const userId = req.user.id;
+            const profile = await studentModel.getProfileByUserId(userId);
+
+            if (!profile) {
+                return res.status(404).json({ message: 'Student profile not found' });
+            }
+
+            const resumeInsights = await studentModel.getResumeInsights(profile.id);
+            const hasResume = resumeInsights !== null;
+
+            res.json({ hasResume });
+        } catch (error) {
+            console.error('Get resume status error:', error);
+            res.status(500).json({ message: 'Failed to fetch resume status' });
         }
     },
 
@@ -140,6 +363,10 @@ export const studentController = {
                 name: s.skill_name,
                 progress: s.progress,
             }));
+            const currentSkillsWithProgress = skills.filter(s => s.is_current).map(s => ({
+                name: s.skill_name,
+                progress: s.progress,
+            }));
 
             // Compute metrics server-side
             const totalSkillSlots = currentSkills.length + skillsToLearn.length;
@@ -175,6 +402,7 @@ export const studentController = {
                 currentSkills,
                 skillsToLearn,
                 skillProgress,
+                currentSkillsWithProgress,
                 leetcodeData: {
                     currentStreak: leetcodeStats.current_streak,
                     longestStreak: leetcodeStats.longest_streak,
